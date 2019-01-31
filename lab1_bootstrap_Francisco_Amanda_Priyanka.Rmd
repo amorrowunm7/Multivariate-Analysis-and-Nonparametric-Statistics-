@@ -1,0 +1,186 @@
+---
+title: "LAB1.BOOTSTRAP DISTRIBUTION"
+author: "Amanda Morrow, Priyanka Laha, Francisco Ortiz"
+output:
+  word_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+##POINT 1.
+```{r}
+data <- c(19.66, 13.66, 86.54, 16.17, 6.83, 15.18, 6.37, 19.03, 1.54, 47.52, 7.42, 8.33, 31.22, 6.00, 8.21, 6.57)
+
+n <- length(data)
+N <- 10^5
+boot_lab1 <- numeric(N)
+
+set.seed(100)
+for (i in 1:N)
+  {
+  sample1 <- sample(data, n, replace = TRUE)
+  boot_lab1[i] <- mean(sample1)
+}
+
+hist(boot_lab1, main = 'Bootstrap Distribution of mean', xlab = 'Mean*')
+abline(v= mean(boot_lab1), col = 'blue', lty= 2)
+abline(v= mean(data), col = 'red', lty= 2)
+
+qqnorm(boot_lab1)
+qqline(boot_lab1)
+
+#The histogram and normal quantile plot for the bootstrap distribution look quite normal, with a strong skewness due to the small sample size (n = 16). 
+#The bootstrap distribution of the mean for this dataset is centered around the sample mean of 18.75
+
+#SUMMARY STATISTICS 
+
+boot_mean_data <- mean(boot_lab1)
+boot_mean_data
+boot_se_data <- sd(boot_lab1)
+boot_se_data
+
+#bias
+bias_data <- boot_mean_data - mean(data)
+bias_data
+
+#Ratio bias
+bias_data/boot_se_data #The ratio is less than 0.02, so that, the bias doesn't have substantial effect on the accuracy of confidence intervals.
+
+#Skewness
+LowerLim<- boot_mean_data - 1.96*boot_se_data
+UpperLim<- boot_mean_data + 1.96*boot_se_data
+
+sum(boot_lab1 > UpperLim)/N #3.8% of the resample mean are above 
+sum(boot_lab1 < LowerLim)/N #0.4% of the resample mean are below
+
+#The distribution is not symmetric, is positive skewed.
+
+quantile(boot_lab1, c(0.025, 0.975))
+
+#The bootstrap SE is 5.16 and the 95% bootstrap percentile interval is (10.25, 30.17)
+
+```
+
+##POINT 5.13 TEXTBOOK
+
+```{r}
+fish_data<- read.csv('http://sites.google.com/site/chiharahesterberg/data2/FishMercury.csv')
+fish_mercury <- fish_data$Mercury
+
+#a)-------------------------------------------------------------
+hist(fish_mercury, main = 'Histogram of Mercury levels in fish', col = 'lightblue')
+boxplot(fish_mercury, main = 'Boxplot of Mercuty levels in fish', col = 'lightblue', horizontal = TRUE)
+#There is just an outlier (value 1.87). The data looks centered at the mean 
+
+mean(fish_mercury)
+median(fish_mercury)
+sd(fish_mercury)
+
+#The data looks centered at the mean (0.18), but because the existence of an outlier (value 1.87), the standard deviation is bigger compared with the mean (sd = 0.32). Now, We know that the sd of the data will be considerable lower deleting the outlier point, and so the bootstrap error. 
+
+#b). Bootstraping-----------------------------------------------
+
+n <- length(fish_mercury)
+N <- 10^5
+
+boot_fish <- numeric(N)
+
+set.seed(101)
+for (i in 1:N)
+  {
+  fish.sample <- sample(fish_mercury, n, replace = TRUE)
+  boot_fish[i] <- mean(fish.sample)
+}
+
+sd(boot_fish)
+
+quantile(boot_fish, c(0.025, 0.975)) 
+#with 95% confidence, the true mean Mercury level is between 0.11 and 0.31.
+
+#c. Eliminating outlier -----------------------------------------
+
+fish2<- fish_mercury[2:30]
+
+n2 <- length(fish2)
+N <- 10^5
+
+boot_fish2 <- numeric(N)
+
+for (i in 1:N)
+  {
+  fish.sample2 <- sample(fish2, n2, replace = TRUE)
+  boot_fish2[i] <- mean(fish.sample2)
+}
+
+sd(boot_fish2)
+quantile(boot_fish2, c(0.025, 0.975))#with 95% confidence, the true mean Mercury level is between 0.11 and 0.14.
+
+#Eliminating the outlier, the bootstrap error is lower, from 0.058 to 0.0078. Because of that, the bootstrap confidence interval without the outlier is narrower.
+
+```
+
+
+## POINT 3
+
+```{r}
+Verizon <- read.csv("http://sites.google.com/site/chiharahesterberg/data2/Verizon.csv")
+
+Time.ILEC <- subset(Verizon, select = Time, Group == "ILEC", drop = TRUE)
+Time.CLEC <- subset(Verizon, select = Time, Group == "CLEC", drop = TRUE)
+
+n.ILEC <- length(Time.ILEC)
+n.CLEC <- length(Time.CLEC)
+
+N <- 10^4
+time.ratio.median <- numeric(N)
+time.ilec_median <- numeric(N)
+time.clec_median <- numeric(N)
+
+set.seed(102)
+for (i in 1:N)
+{
+  ILEC.sample_M <- sample(Time.ILEC, n.ILEC, replace = TRUE)
+  CLEC.sample_M <- sample(Time.CLEC, n.CLEC, replace = TRUE)
+  time.ilec_median[i] <- median(ILEC.sample_M)
+  time.clec_median[i] <- median(CLEC.sample_M)
+  time.ratio.median[i] <- median(ILEC.sample_M)/median(CLEC.sample_M)
+}
+
+hist(time.ilec_median, main = 'Bootstrap distribution of the median ILEC', xlab = 'Median*')
+abline(v = median(Time.ILEC), col = 'red')
+
+hist(time.clec_median, main = 'Bootstrap distribution of the median CLEC', xlab = 'Median*')
+abline(v = median(Time.CLEC), col = 'red')
+
+#We can see that the median of repair times for the CLEC customers is much higher than ILEC customers, as expected from the distribution of sample means. Due this fact, we could expect a strong skewness in the distribution of ratio of medians. 
+
+hist(time.ratio.median, main = "Bootstrap distribution of ratio of medians ILEC/CLEC",
+     xlab = "ratio of medians")
+abline(v = median(time.ratio.median), col = "red", lty = 2)
+abline(v = median(Time.ILEC)/median(Time.CLEC), col = "blue")
+
+#As in the ratio of means, the boostrap distribution of the ratio of medians exhibits positive skewness.
+
+#SUMMARY STATISTICS
+
+mean(time.ratio.median)
+sd(time.ratio.median)
+quantile(time.ratio.median, c(0.025, 0.975))
+#The 95% boostrap percentile confidence interval for the ratio of medians (ILEC/CLEC) is (0.1685, 0.6385), so with 95% confidence, the true median repair time for ILEC customers is between 0.17 and 0.64 times the true median for CLEC customers. 
+
+#Bias
+bias.verizon_median<- mean(time.ratio.median)-(median(Time.ILEC)/median(Time.CLEC))
+bias.verizon_median
+bias.verizon_median/sd(time.ratio.median)
+
+#The bias of the Verizon ratio of means is about 22% of the standard error. Whereas the bias of the ratio of medians is about 24% the standard error.
+#the ratio exceeds 0.02, so there is a substantial effect on the accuracy of confidence intervals. 
+
+```
+
+
+
+
