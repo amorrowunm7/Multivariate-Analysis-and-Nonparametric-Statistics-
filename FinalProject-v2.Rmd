@@ -1,0 +1,402 @@
+---
+title: "PCA"
+author: "Amanda Morrow"
+date: "April 30, 2019"
+output:
+  word_document: default
+
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+
+
+
+```{r}
+#install.packages("MVA")
+library(stats)
+library(gplots)
+library(cluster)
+library(ggfortify)
+library(data.table)
+library(dplyr)
+library(stats)
+library(gplots)
+library(cluster)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+library(e1071)
+library(robustHD)
+library(caret)
+library(MVA)
+library(kernlab)
+library(gplots)
+#library(fpc)
+library(cluster)
+library(NbClust)
+
+
+
+
+
+
+```
+ 
+
+
+
+
+
+```{r}
+gene  <- read.csv("gene.csv", header = T, sep = ",")
+dim(gene)
+
+
+
+```
+
+
+
+
+```{r}
+
+
+###############  Clustering is done on patients.Method is finding the optimal number of cancer subtypes 
+
+cluster <- gene[,1:1001]
+
+##data <- data.frame(lapply(X = gene,FUN = as.numeric))
+
+#computes cosine distance function
+cosineDist <- function(x){
+  as.dist( 1-x%*%t(x)/(sqrt(rowSums(x^2) %*% t(rowSums(x^2)))))
+}
+
+#Pearson
+dist2 <- function(x, ...)
+  as.dist(1-cor(t(x),method="pearson"))
+
+hierarchical <- function(x,k){
+  d <- dist(data,method ="euclidean")
+  #d <-  cosineDist(as.matrix(data))
+  h_com <- hclust(d, method = "ward")
+  clusters <- cutree(h_com, k = k)
+  list(cluster=clusters)
+}
+
+
+
+#compute distance metric
+d <- dist(cluster,method ="euclidean")
+
+#hierarchical clustering
+h_com <- hclust(d, method = "complete")
+h_avg <- hclust(d, method = "average")
+h_single <- hclust(d, method = "single")
+h_ward <- hclust(d,method="ward.D2")
+
+#plot the hierarchical tree
+plot(h_com, main = " df Cancer Data ")
+plot(h_ward, main = " df Cancer Data ")
+
+
+
+
+
+```
+
+
+
+
+
+
+```{r}
+
+
+
+#Cut tree at 100 
+clusters1 <- data.frame(cutree(h_ward, h = 100))
+
+
+#cut tree by providing the desired number of clusters
+clusters2 <- data.frame(cutree(h_com, k = 6))
+
+
+#autoplot(prcomp(cluster))
+
+# visualize the dissimilarity matrix
+#visualize as a heatmap
+#orginal distance matrix before clustering
+
+#distance matrix after clustering
+#heatmap.2(as.matrix(d),scale="none",dendrogram="both",trace="none",Rowv=as.dendrogram(h_ward),Colv=as.dendrogram(h_ward))
+
+
+#heatmap.2(as.matrix(d),scale="col",col=bluered,dendrogram="row",trace="none",Rowv=as.dendrogram(h_ward),Colv=FALSE)
+
+# SSE PLOT
+
+#plot(1:kmax, sil[1:kmax], type = "b", pch = 19, frame = FALSE, xlab = "Number of clusters k",ylab="Avg silhouette")
+# Clusters = 1 , minimize Clusters
+#abline(v = which.max(sil[1:kmax]), lty = 2)
+  
+
+
+
+```
+
+
+
+
+
+
+
+
+Break up dataset with  into test and training set.
+```{r}
+
+
+
+
+smp_size <- floor(0.75 * nrow(gene))
+
+set.seed(123)
+train_ind <- sample(seq_len(nrow(gene)), size = smp_size)
+
+train_data <- gene[train_ind, ]
+test_data <- gene[-train_ind, ]
+dim(train_data)
+dim(test_data)
+
+test_data$stage = as.factor(test_data$stage)
+str(test_data$stage)
+train_data$stage = as.factor(train_data$stage)
+str(train_data$stage)
+
+
+
+```
+
+
+
+
+
+
+
+```{r}
+
+
+
+data <-gene[,2:1001]
+dim(data)
+
+```
+
+
+
+
+
+
+
+
+```{r}
+
+df <- read.csv("geneonly.csv",header= T)
+
+```
+  
+```{r}
+
+#scale <- as.data.frame(scale(df))
+str(scale)
+
+```
+
+
+
+```{r}
+
+
+
+pc <-  prcomp(df,cor=TRUE)
+
+#The total variance explained by the components 
+sum((pc$sdev)^2)
+
+
+
+screeplot(pc, col = "red", pch = 16,
+type = "lines", cex = 2, lwd = 2, main = "")
+
+summary(pc)
+
+```
+The 3rd component occurs after the elbow point on the graph, further indicating that this would be a
+plausable value for k preserving at least 80% of the total variance.
+
+
+Break up dataset with  into test and training set.
+```{r}
+
+
+data <- read.csv(file = "gene3.csv",header = T,sep = "," )
+
+smp_size <- floor(0.75 * nrow(data))
+
+set.seed(123)
+train_ind <- sample(seq_len(nrow(data)), size = smp_size)
+
+train_data <- data[train_ind, ]
+test_data <- data[-train_ind, ]
+dim(train_data)
+dim(test_data)
+
+test_data$stage = as.factor(test_data$stage)
+str(test_data$stage)
+train_data$stage = as.factor(train_data$stage)
+str(train_data$stage)
+
+
+
+```
+  
+
+
+
+
+
+
+```{r}
+
+
+
+
+smp_size <- floor(0.75 * nrow(data))
+
+set.seed(123)
+train_ind <- sample(seq_len(nrow(data)), size = smp_size)
+
+train_data <- data[train_ind, ]
+test_data <- data[-train_ind, ]
+dim(train_data)
+dim(test_data)
+
+test_data$stage = as.factor(test_data$stage)
+train_data$stage = as.factor(train_data$stage)
+
+
+
+```
+
+
+
+
+
+```{r}
+
+
+##################### SVM ##################### 
+
+
+#Tuning SVM parameters
+
+
+
+svm_tune <- tune.svm(stage ~ . , data = train_data,scale=TRUE, kernel ="radial",cost=10^(-1:2), gamma=c(.5,1,2))
+
+svm_tune$best.parameters
+
+
+
+
+```
+
+
+
+
+
+
+```{r}
+
+
+## SVM
+
+
+
+#10-fold cross validation
+
+svm.model.2 <- svm(stage ~ ., 
+                   scale=FALSE,  method="C-classification", kernal="radial",
+                   data = train_data, cost = 0.1, 
+                   gamma = 0.5,cross = 10)
+
+summary(svm.model.2)
+
+#getting the accuracies for 10 folds
+ svm.model.2$accuracies
+
+#getting the average accuracy
+ svm.model.2$tot.accuracy
+ 
+# Obtain feature weights
+w = t(svm.model.2$coefs) %*% svm.model.2$SV
+w2 <-t(w)
+
+#predict on testing data
+svm.pred  <- predict(svm.model.2, test_data)
+
+
+
+```
+
+
+```{r}
+
+rf.data <- read.csv("gene_rf.csv", header = T)
+
+str(rf.data)
+
+rf.data2 <- rf.data[ ,2:5]
+str(rf.data2)
+```
+
+
+
+
+
+
+```{r}
+
+rf.model <- randomForest(stage
+~ .,data=rf.data2,replace=TRUE,ntree=500,importance=T)
+
+rf.model
+
+
+```
+
+
+
+```{r}
+
+plot(rf.model)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
